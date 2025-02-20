@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pac-Man en Mouvement Continu</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: white;
+      font-family: sans-serif;
+    }
+    canvas {
+      border: 2px solid #fff;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
+  <script>
+
+    let gameOver = false;
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const cellSize = 40; // Chaque cellule fait 40x40 pixels
+
+    let  maze = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,3,1],
+    [1,2,1,1,1,2,1,1,1,1,1,2,1,2,1],
+    [1,2,1,2,1,2,1,2,2,2,1,2,1,2,1],
+    [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1],
+    [1,2,2,2,2,2,2,2,1,2,2,2,2,2,1],
+    [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1],
+    [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1],
+    [1,3,2,2,1,2,2,2,1,2,2,2,2,2,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ];
+
+
+
+    let pacman = { x: 1, y: 1, dx: 1, dy: 0 }; // Position initiale et déplacement vers la droite
+    let fantom = { x: 13, y: 8, dx: 0, dy: -1,leave : true }; // Position initiale et déplacement vers la droite
+    let score = 0;
+    let GodMod = 0 
+  
+
+    function start() {
+  // Réinitialiser le flag gameOver
+  gameOver = false;
+  
+  GodMod = 0;
+  pacman = { x: 1, y: 1, dx: 1, dy: 0 };
+  fantom = { x: 13, y: 8, dx: 0, dy: -1, leave: true };
+  score = 0;
+  maze = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,3,1],
+    [1,2,1,1,1,2,1,1,1,1,1,2,1,2,1],
+    [1,2,1,2,1,2,1,2,2,2,1,2,1,2,1],
+    [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1],
+    [1,2,2,2,2,2,2,2,1,2,2,2,2,2,1],
+    [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1],
+    [1,2,1,2,1,2,1,2,1,2,1,2,1,2,1],
+    [1,3,2,2,1,2,2,2,1,2,2,2,2,2,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ];
+}
+
+
+    document.addEventListener("keydown", (e) => {
+      let newDx = 0, newDy = 0;
+      if (e.key === "ArrowUp") {
+        newDx = 0; newDy = -1;
+      } else if (e.key === "ArrowDown") {
+        newDx = 0; newDy = 1;
+       
+      } else if (e.key === "ArrowLeft") {
+        newDx = -1; newDy = 0;
+      } else if (e.key === "ArrowRight") {
+        newDx = 1; newDy = 0;
+      }else if (e.key === "Enter") {
+        start();
+      }
+
+      const nextX = pacman.x + newDx;
+      const nextY = pacman.y + newDy;
+
+      // Vérifier que la prochaine case existe et n'est pas un mur
+      if (maze[nextY] && maze[nextY][nextX] !== undefined && maze[nextY][nextX] !== 1) {
+        pacman.dx = newDx;
+        pacman.dy = newDy;
+      }
+    });
+
+
+
+
+
+    function update() {
+      // Calculer la prochaine position de Pac-Man
+      const nextX = pacman.x + pacman.dx;
+      const nextY = pacman.y + pacman.dy;
+      
+      // Calculer la prochaine position du fantôme selon sa direction actuelle
+      const nextFX = fantom.x + fantom.dx;
+      const nextFY = fantom.y + fantom.dy;
+      
+      // Variable pour savoir si le fantôme a changé de direction grâce au hasard
+      let changeDirection = false;
+    
+      // Déplacement de Pac-Man si la prochaine case est accessible (non-mur)
+      if (maze[nextY] && maze[nextY][nextX] !== undefined && maze[nextY][nextX] !== 1) {
+        pacman.x = nextX;
+        pacman.y = nextY;
+      }
+    
+      // Si la prochaine case du fantôme est accessible
+      if (maze[nextFY] && maze[nextFY][nextFX] !== undefined && maze[nextFY][nextFX] !== 1) {
+        // Si le fantôme se déplace horizontalement (dx non nul)
+        if (fantom.dx !== 0) {
+          // Vérifier la possibilité de monter
+          if (maze[fantom.y - 1] && maze[fantom.y - 1][fantom.x] !== undefined && maze[fantom.y - 1][fantom.x] !== 1) {
+            // Générer un nombre entre 1 et 3 (chance sur 3)
+            const nombreEntier = Math.floor(Math.random() * 4) + 1;
+            if (nombreEntier === 3) {
+              fantom.dx = 0;
+              fantom.dy = -1;
+              changeDirection = true;
+            }
+          }
+          // Sinon, vérifier la possibilité de descendre
+          else if (maze[fantom.y + 1] && maze[fantom.y + 1][fantom.x] !== undefined && maze[fantom.y + 1][fantom.x] !== 1) {
+            const nombreEntier = Math.floor(Math.random() * 4) + 1;
+            if (nombreEntier === 3) {
+              fantom.dx = 0;
+              fantom.dy = 1;
+              changeDirection = true;
+            }
+          }
+          // Si aucune modification aléatoire n'a été effectuée, avancer normalement
+          if (!changeDirection) {
+            fantom.x = nextFX;
+            fantom.y = nextFY;
+          }
+        }
+        // Si le fantôme se déplace verticalement (dy non nul)
+        else if (fantom.dy !== 0) {
+          // Vérifier la possibilité d'aller à gauche
+          if (maze[fantom.y][fantom.x - 1] !== undefined && maze[fantom.y][fantom.x - 1] !== 1) {
+            const nombreEntier = Math.floor(Math.random() * 4) + 1;
+            if (nombreEntier === 3) {
+              fantom.dx = -1;
+              fantom.dy = 0;
+              changeDirection = true;
+            }
+          }
+          // Sinon, vérifier la possibilité d'aller à droite
+          else if (maze[fantom.y][fantom.x + 1] !== undefined && maze[fantom.y][fantom.x + 1] !== 1) {
+            const nombreEntier = Math.floor(Math.random() * 4) + 1;
+            if (nombreEntier === 3) {
+              fantom.dx = 1;
+              fantom.dy = 0;
+              changeDirection = true;
+            }
+          }
+          // Si aucun changement n'est opéré, avancer normalement
+          if (!changeDirection) {
+            fantom.x = nextFX;
+            fantom.y = nextFY;
+          }
+        }
+      } 
+      // Si la prochaine case dans la direction actuelle du fantôme est bloquée
+      else {
+        // Si le fantôme se déplace horizontalement
+        if (fantom.dx !== 0) {
+          // Essayer de monter
+          if (maze[fantom.y - 1] && maze[fantom.y - 1][fantom.x] !== undefined && maze[fantom.y - 1][fantom.x] !== 1) {
+            fantom.dx = 0;
+            fantom.dy = -1;
+          }
+          // Sinon, essayer de descendre
+          else if (maze[fantom.y + 1] && maze[fantom.y + 1][fantom.x] !== undefined && maze[fantom.y + 1][fantom.x] !== 1) {
+            fantom.dx = 0;
+            fantom.dy = 1;
+          }
+          // Si aucune direction verticale n'est possible, inverser la direction horizontale
+          else {
+            fantom.dx = -fantom.dx;
+          }
+        }
+        // Si le fantôme se déplace verticalement
+        else if (fantom.dy !== 0) {
+          // Essayer d'aller à gauche
+          if (maze[fantom.y][fantom.x - 1] !== undefined && maze[fantom.y][fantom.x - 1] !== 1) {
+            fantom.dx = -1;
+            fantom.dy = 0;
+          }
+          // Sinon, essayer d'aller à droite
+          else if (maze[fantom.y][fantom.x + 1] !== undefined && maze[fantom.y][fantom.x + 1] !== 1) {
+            fantom.dx = 1;
+            fantom.dy = 0;
+          }
+          // Sinon, inverser la direction verticale
+          else {
+            fantom.dy = -fantom.dy;
+          }
+        }
+      }
+      
+      // Gestion de la collecte des pastilles par Pac-Man
+      if (maze[pacman.y][pacman.x] === 2) {
+        maze[pacman.y][pacman.x] = 0;
+        score++;
+      }
+      if(GodMod > 0 ){GodMod--;}
+      if (maze[pacman.y][pacman.x] === 3) {
+        maze[pacman.y][pacman.x] = 0;
+        GodMod = 30;
+      }
+
+      
+      
+      // Détection de collision entre Pac-Man et le fantôme
+      if (pacman.y === fantom.y && pacman.x === fantom.x && GodMod === 0 && fantom.leave === true) {
+        gameOver = true;
+      }
+      else if (pacman.y === fantom.y && pacman.x === fantom.x && GodMod > 0 ) {
+        fantom.leave = false;
+      }
+    }
+    
+
+
+
+
+
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dessiner le labyrinthe
+      for (let y = 0; y < maze.length; y++) {
+        for (let x = 0; x < maze[y].length; x++) {
+          const cell = maze[y][x];
+          const posX = x * cellSize;
+          const posY = y * cellSize;
+          if (cell === 1) {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(posX, posY, cellSize, cellSize);
+          } else if (cell === 2) {
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(posX + cellSize / 2, posY + cellSize / 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }else if (cell === 3) {
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(posX + cellSize / 2, posY + cellSize / 2, 6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      // Dessiner Pac-Man
+      ctx.fillStyle = "yellow";
+      ctx.beginPath();
+      ctx.arc(
+        pacman.x * cellSize + cellSize / 2,
+        pacman.y * cellSize + cellSize / 2,
+        cellSize / 2 - 2,
+        0.25 * Math.PI,
+        1.75 * Math.PI
+      );
+      ctx.lineTo(pacman.x * cellSize + cellSize / 2, pacman.y * cellSize + cellSize / 2);
+      ctx.fill();
+      
+      
+      
+      // Exemple de dessin d'un fantôme dans un "cellule" de la grille
+      
+      if(GodMod === 0 && fantom.leave === true){
+        ctx.fillStyle = "red";
+      ctx.beginPath();
+      
+      const centerX = fantom.x * cellSize + cellSize / 2;
+      const centerY = fantom.y * cellSize + cellSize / 2;
+      const radius = cellSize / 2 - 2;
+      
+      // Dessiner la partie supérieure : un demi-cercle (la tête du fantôme)
+      ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
+      
+      // Dessiner le bas en zigzag pour simuler le bas en forme de vague du fantôme
+      const zigzagCount = 4;         // Nombre de pointes en bas
+      const stepWidth = (2 * radius) / zigzagCount;
+      
+      // Point de départ sur le côté droit du demi-cercle
+      ctx.lineTo(centerX + radius, centerY + radius);
+      
+      // Créer les pointes en alternance
+      for (let i = 0; i < zigzagCount; i++) {
+        // Pour chaque segment, le point médian alterne verticalement
+        const xPos = centerX + radius - (i + 0.5) * stepWidth;
+        // Alternance : on descend ou on remonte pour créer l'effet ondulé
+        const yPos = centerY + radius + (i % 2 === 0 ? 10 : -10);
+        ctx.lineTo(xPos, yPos);
+      }
+      
+      // Terminer le bas sur le côté gauche
+      ctx.lineTo(centerX - radius, centerY + radius);
+      
+      ctx.closePath();
+      ctx.fill();
+      }
+      else if(GodMod > 0 && fantom.leave === true){
+        ctx.fillStyle = "blue";
+      ctx.beginPath();
+      
+      const centerX = fantom.x * cellSize + cellSize / 2;
+      const centerY = fantom.y * cellSize + cellSize / 2;
+      const radius = cellSize / 2 - 2;
+      
+      // Dessiner la partie supérieure : un demi-cercle (la tête du fantôme)
+      ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
+      
+      // Dessiner le bas en zigzag pour simuler le bas en forme de vague du fantôme
+      const zigzagCount = 4;         // Nombre de pointes en bas
+      const stepWidth = (2 * radius) / zigzagCount;
+      
+      // Point de départ sur le côté droit du demi-cercle
+      ctx.lineTo(centerX + radius, centerY + radius);
+      
+      // Créer les pointes en alternance
+      for (let i = 0; i < zigzagCount; i++) {
+        // Pour chaque segment, le point médian alterne verticalement
+        const xPos = centerX + radius - (i + 0.5) * stepWidth;
+        // Alternance : on descend ou on remonte pour créer l'effet ondulé
+        const yPos = centerY + radius + (i % 2 === 0 ? 10 : -10);
+        ctx.lineTo(xPos, yPos);
+      }
+      
+      // Terminer le bas sur le côté gauche
+      ctx.lineTo(centerX - radius, centerY + radius);
+      
+      ctx.closePath();
+      ctx.fill();
+      }
+
+
+      // Afficher le score
+      ctx.fillStyle = "white";
+      ctx.font = "16px sans-serif";
+      ctx.fillText("Score: " + score, 10, canvas.height - 10);
+    }
+
+    let lastTime = 0;
+    const updateInterval = 125;
+
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const delta = timestamp - lastTime;
+
+      if (delta > updateInterval) {
+        if(gameOver !== true){
+            update();}
+        lastTime = timestamp;
+      }
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
